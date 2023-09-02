@@ -1,0 +1,123 @@
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include "DHT.h"
+#include "Adafruit_BMP280.h"
+#include "arduino_secrets.h" // Separate file with SSID and password
+
+#define DHTPIN 3
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+Adafruit_BMP280 bmp;
+
+char serverIP[] = "";  // Enter your IP address here; make sure it matches Flask
+const int serverPort = 5000; 
+
+const int ledPin = 6;
+
+char ssid[] = SECRET_SSID;  // Replace with your network's SSID
+char pass[] = SECRET_PASS;  // Replace with your network's password
+
+bool isTesting = false; // Set this to true for testing, false for production
+unsigned long startTime = 0;
+unsigned long timeLimit = 30000; // 30 seconds for testing
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+  dht.begin();
+  bmp.begin();
+  setupWiFi();
+}
+
+void loop() {
+
+  if (WiFi.status() != WL_CONNECTED) {
+    setupWiFi();
+  }
+
+  WiFiClient client;
+
+  if (client.connect(serverIP, serverPort)) {
+    digitalWrite(ledPin, HIGH);
+    Serial.println("Data logging in progress");
+
+    if (isTesting) {
+      startTime = millis();
+      while (millis() - startTime < timeLimit) {
+        transmitData(client);
+        delay(1000); // Wait 1 second before the next reading
+      }
+    } else {
+      transmitData(client);
+    }
+
+    digitalWrite(ledPin, LOW);
+    Serial.println("Data logging stopped");
+  } else {
+    Serial.println("Failed to connect to server. Retrying...");
+    delay(5000);  // Wait 5 seconds before retrying
+  }
+}
+
+void transmitData(WiFiClient &client) {
+  float temperature = dht.readTemperature(true); // deg F
+  float humidity = dht.readHumidity(); // Percentage
+  float pressure = bmp.readPressure() / 1000.0F; // kPA
+
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+  Serial.print("Humidity: ");
+  Serial.println(humidity);
+  Serial.print("Pressure: ");
+  Serial.println(pressure);
+
+  if (isnan(temperature) || isnan(humidity) || isnan(pressure)) {
+    Serial.println("Failed to read from sensor!");
+  } else {
+    String payload = String("{\"temperature\": ") + String(temperature) + ", \"pressure\": " + String(pressure) + ", \"humidity\": " + String(humidity) + "}";
+
+    // Send HTTP Headers
+    client.println("POST /api/data HTTP/1.1");
+    client.println("Host: ");  // Your IP address goes here
+    client.println("Content-Type: application/json");
+    client.print("Content-Length: ");
+    client.println(payload.length());
+    client.println();  // Empty line signifies the end of the headers
+
+    // Send payload
+    client.println(payload);
+
+    // Add a delay and print to the Serial monitor for debugging
+    delay(500);  
+    Serial.println("Payload sent, waiting for response...");
+
+    // Handle server response
+    while (client.connected()) {
+      String line = client.readStringUntil('\n');
+      if (line == "\r") {
+        Serial.println("Headers received.");
+        break;
+      }
+    }
+
+    // Read the first line of the body, which should contain the HTTP status code
+    String statusCode = client.readStringUntil('\n');
+    Serial.println("Response: " + statusCode);
+
+    // Close the client connection
+    client.stop();
+  }
+}
+
+void setupWiFi() {
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print("Attempting to connect to WPA SSID: ");
+    Serial.println(ssid);
+    if (WiFi.begin(ssid, pass) == WL_CONNECT_FAILED) {
+      Serial.println("Failed to connect to WiFi. Retrying...");
+      delay(5000);  // Wait 5 seconds before retrying
+    }
+  }
+  Serial.println("Connected to WiFi");
+}
