@@ -3,11 +3,16 @@ import yaml
 import threading
 import schedule  
 from scheduler import sample_and_analyze
-from src import sensor_api, database_operations
-import time  
+import sensor_api, database_operations
+import time
+import os
+
+# Create the logs folder if it doesn't exist
+if not os.path.exists('logs'):
+    os.makedirs('logs')
 
 # Read Configuration
-with open("config.yaml", 'r') as stream:
+with open("config.yml", 'r') as stream:
     config = yaml.safe_load(stream)
 
 # Extract configurations
