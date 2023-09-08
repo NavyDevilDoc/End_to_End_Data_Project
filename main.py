@@ -1,6 +1,10 @@
 import logging
 import yaml
+import threading
+import schedule  
+from scheduler import sample_and_analyze
 from src import sensor_api, database_operations
+import time  
 
 # Read Configuration
 with open("config.yaml", 'r') as stream:
@@ -19,11 +23,26 @@ log_level_map = {
     'WARNING': logging.WARNING,
     'ERROR': logging.ERROR,
     'CRITICAL': logging.CRITICAL
-}
-logging.basicConfig(filename='logs/app.log', level=log_level_map.get(log_level, logging.DEBUG))
+    }
 
-# Initialize Database
-database_operations.create_db_and_table(db_name)
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-# Initialize Flask
-sensor_api.app.run(host=server_host, port=server_port)
+if __name__ == "__main__":
+    # Initialize Logging
+    logging.basicConfig(filename='logs/app.log', level=log_level_map.get(log_level, logging.DEBUG))
+
+    # Initialize Database
+    database_operations.create_db_and_table(db_name)
+
+    # Schedule the sampling and analysis to run every hour
+    schedule.every(1).hours.do(sample_and_analyze)
+
+    # Start the scheduler in a new thread
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.start()
+
+    # Start the Flask app
+    sensor_api.app.run(host=server_host, port=server_port)
