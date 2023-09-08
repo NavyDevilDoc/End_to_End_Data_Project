@@ -113,6 +113,9 @@ def perform_eda_and_plot(df):
     plt.title('Sensor Data (Cleaned)')
     plt.legend()
     plt.show()
+    
+    summary_stats = df.describe()
+    return summary_stats
 
 if __name__ == "__main__":
     database_path = "sensor_data.db"
