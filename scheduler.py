@@ -1,10 +1,9 @@
 import schedule
-import time
 import yaml
-from src import database_operations, data_analysis
+import database_operations, data_analysis
 
 # Read Configuration
-with open("config.yaml", 'r') as stream:
+with open("config.yml", 'r') as stream:
     config = yaml.safe_load(stream)
 
 # Extract configurations
@@ -17,8 +16,3 @@ def sample_and_analyze():
 
 # Initialize Scheduler
 schedule.every(1).hours.do(sample_and_analyze)
-
-# Main loop for scheduler
-while True:
-    schedule.run_pending()
-    time.sleep(1)
