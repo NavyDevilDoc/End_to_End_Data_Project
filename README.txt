@@ -28,12 +28,14 @@ System Architecture:
 
 Arduino Uno WIFI
       |------------>WIFI<------->Flask------->SQLite-------->Analysis scripts---->Output
-	  |                                         ^                      |
-	  |                                         |                      v
-	  |                                         |----------------------|
-	__|__
+      |                                         ^                      |
+      |                                         |                      v
+      |                                         |----------------------|
+    __|__
    |     |
 DHT-11  BMP-280
+
+Update (11 Sep 23): I've made some significant revisions to parts of the code that revolve around its analytical and data-logging capabilities. One issue I have seen that is unrelated to the Python pipeline is with the Arduino. For some reason, I have to manually toggle the reset switch once every twelve hours or it will stop transmitting data. I'm digging into the issue but if anyone out there understands the problem, don't hesitate to throw out a solution. A second, but minor, issue I'm seeing is that the Spyder console output sometimes shows four df.describe() calls and I cannot figure out why. It doesn't impact anything important, but it would be nice to solve. 
 
 Final Thoughts: I'm not exactly sure what's supposed to go in a README file, so hit me with your knowledge.
 Thanks again for taking a look and I'm looking forward to collaborating with folks toward the goal of making
