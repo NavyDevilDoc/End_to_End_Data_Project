@@ -3,6 +3,8 @@ import yaml
 import threading
 import schedule  
 from scheduler import sample_and_analyze
+from data_analysis_text_file_cleaner import filter_results
+
 import sensor_api, database_operations
 import time
 import os
@@ -43,7 +45,10 @@ if __name__ == "__main__":
     database_operations.create_db_and_table(db_name)
 
     # Schedule the sampling and analysis to run every hour
-    schedule.every(1).hours.do(sample_and_analyze)
+    schedule.every(30).minutes.do(sample_and_analyze)
+
+    # Schedule the text file cleaner to run every 2 hours
+    schedule.every(2).hours.do(filter_results)
 
     # Start the scheduler in a new thread
     scheduler_thread = threading.Thread(target=run_scheduler)
